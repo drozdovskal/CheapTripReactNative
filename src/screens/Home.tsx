@@ -1,95 +1,96 @@
 import React, { useState, useEffect, FC, useMemo, useCallback } from "react";
-import { View, StyleSheet, Image, Platform } from "react-native";
-import { Text, useTheme, TextInput, Button } from "react-native-paper";
+import { View, StyleSheet, Platform } from "react-native";
+import { Text, useTheme, Button } from "react-native-paper";
+import { FlatList } from "react-native-gesture-handler";
+import Autocomplete from "react-native-autocomplete-input";
+import { FontAwesome5 } from "@expo/vector-icons";
 import ListComponent from "../components/ListComponent/ListComponent";
 
-import Autocomplete from "react-native-autocomplete-input";
-
-import { FontAwesome5 } from "@expo/vector-icons";
-import { FlatList } from "react-native-gesture-handler";
-
-export interface Item {
+interface Location {
+  id: string;
   name: string;
 }
 
-interface directionsProps {
+interface Direction {
   id: string;
   from: string;
   to: string;
   price: string;
+  duration: number;
 }
 
 export const Home: FC = () => {
   const [forCity, setForCity] = useState("");
   const [toCity, setToCity] = useState("");
-  const [cities, setCities] = useState([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [hideForCity, setHideForCity] = useState(false);
   const [hideToCity, setHideToCity] = useState(false);
+  const [onSubmit, setOnSubmit] = useState(false);
+  const [directions, setDirections] = useState<Direction[]>([]);
   const theme = useTheme();
 
- const [onSubmit,setOnSubmit] = useState(false)
+  const fetchLocations = async () => {
+    try {
+      const response = await fetch("https://cheaptrip.pythonanywhere.com/api/locations/");
+      const data = await response.json();
+      setLocations(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
- const onSubmitAction = () => {
-  console.log("Pressed")
-  setOnSubmit(true)
- }
+  useEffect(() => {
+    fetchLocations();
+  }, []);
 
- 
-
-  const filtredCities = (forCity: string) => {
-    if (forCity) {
-      const cityFor = cities.slice(1).filter((item: { name: string }) => {
-        const name = item.name;
-        if (name === undefined) return;
-        return name.toLowerCase().indexOf(forCity.toLowerCase()) === 0;
-      });
-      return cityFor;
+  const filteredLocations = (input: string) => {
+    if (input) {
+      const filtered = locations.filter((location) =>
+        location.name.toLowerCase().startsWith(input.toLowerCase())
+      );
+      return filtered;
     }
     return [];
   };
 
-  const dataForCity = filtredCities(forCity);
-  const dataToCity = filtredCities(toCity);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const getCities = await fetch(
-          "https://graphproject-482d9-default-rtdb.europe-west1.firebasedatabase.app/locations.json"
-        );
-        const responseData = await getCities.json();
-
-        await setCities(responseData);
-      } catch (error) {
-        console.log(error);
-      }
-    })();
-  }, []);
-
-  const directions: directionsProps[] = useMemo(
-
-  // new data will be fetched as an alternative to this array
-    
-    () => [
-      { id: "1", from: "Bucharest", to: "Iasi", price: "19.38" },
-      { id: "2", from: "Bucharest", to: "Iasi", price: "100" },
-      { id: "3", from: "Bucharest", to: "Iasi", price: "100" },
-      { id: "4", from: "Bucharest", to: "Iasi", price: "100" },
-      { id: "5", from: "Bucharest", to: "Iasi", price: "100" },
-      { id: "6", from: "Bucharest", to: "Iasi", price: "100" },
-      { id: "7", from: "Bucharest", to: "Iasi", price: "100" },
-      { id: "8", from: "Bucharest", to: "Iasi", price: "100" },
-      { id: "9", from: "Bucharest", to: "Iasi", price: "100" },
-    ],
-    []
-  );
+  const dataForCity = filteredLocations(forCity);
+  const dataToCity = filteredLocations(toCity);
 
   const renderItem = useCallback(({ item }) => {
     return <ListComponent toCity={toCity} forCity={forCity} item={item} />;
   }, []);
-  // const renderItems = ({ item }: { item: Item }) => <Text>{item.name}</Text>;
+
+  const sendPostRequest = async () => {
+    try {
+      const response = await fetch("https://cheaptrip.pythonanywhere.com/api/routes/", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: forCity,
+          to: toCity,
+        }),
+      });
+      const data = await response.json();
+      // Process the response data from the server
+      console.log('Response received:', data);
+      // Update the directions state with the received routes
+      setDirections(data.routes);
+      setOnSubmit(true);
+    } catch (error) {
+      console.error('An error occurred:', error);
+    }
+  };
+
+  const onSubmitAction = () => {
+    console.log("Pressed");
+    setOnSubmit(true);
+    sendPostRequest(); // Call the function to execute the POST request
+  };
+
   return (
-    <View style={{ flex: 1}}>
+    <View style={{ flex: 1 }}>
       <View style={styles.container}>
         <View style={styles.titleContainer}>
           <Text
@@ -99,8 +100,8 @@ export const Home: FC = () => {
             }}
             variant="titleMedium"
           >
-            Find most beneficial and unusual routes between cities with
-            airports, combining flight, train, bus, ferry and rideshare.
+            Find the most beneficial and unusual routes between cities with airports, combining flight,
+            train, bus, ferry, and rideshare.
           </Text>
         </View>
         <View style={styles.mainContainer}>
@@ -119,8 +120,8 @@ export const Home: FC = () => {
                 setForCity(text), setHideForCity(false);
               }}
               flatListProps={{
-                keyExtractor: (_: any, idx: any) => idx,
-                renderItem: ({ item }: { item: Item }) => (
+                keyExtractor: (item) => item.id,
+                renderItem: ({ item }) => (
                   <Text
                     onPress={() => {
                       setForCity(item.name);
@@ -138,7 +139,7 @@ export const Home: FC = () => {
               style={styles.iconArrow}
               name="angle-double-down"
               size={24}
-              color={`${theme.colors.primary}`}
+              color={theme.colors.primary}
             />
             <Autocomplete
               containerStyle={{
@@ -154,8 +155,8 @@ export const Home: FC = () => {
                 setToCity(text), setHideToCity(false);
               }}
               flatListProps={{
-                keyExtractor: (_: any, idx: any) => idx,
-                renderItem: ({ item }: { item: Item }) => (
+                keyExtractor: (item) => item.id,
+                renderItem: ({ item }) => (
                   <Text
                     onPress={() => {
                       setToCity(item.name);
@@ -175,30 +176,34 @@ export const Home: FC = () => {
             icon="delete"
             mode="elevated"
             onPress={() => {
-              setForCity(""), setToCity("")
-              setOnSubmit(false)
-              ;
+              setForCity("");
+              setToCity("");
+              setOnSubmit(false);
             }}
           >
             Clear
           </Button>
-          <Button
-            icon="car"
-            mode="contained"
-            onPress={onSubmitAction}
-          >
-            Let`s go
+          <Button icon="car" mode="contained" onPress={onSubmitAction}>
+            Let's go
           </Button>
         </View>
       </View>
-      {onSubmit ? 
-      <View style={styles.flatList}>
-        <FlatList
-          data={directions}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-        />
-      </View> : null}
+      {onSubmit && (
+        <View style={styles.flatList}>
+          <FlatList
+            data={directions}
+            renderItem={({ item }) => (
+              <View>
+                <Text>From: {item.from}</Text>
+                <Text>To: {item.to}</Text>
+                <Text>Price: {item.price}</Text>
+                <Text>Duration: {item.duration} minutes</Text>
+              </View>
+            )}
+            keyExtractor={(item) => item.id}
+          />
+        </View>
+      )}
     </View>
   );
 };
@@ -232,29 +237,20 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    ...Platform.select({
-      android: {
-        marginTop: 130,
-      },
-    }),
+    justifyContent: "space-between",
   },
-  
   autocompleteContainer: {
-    width: "100%",
+    flexDirection: "row",
     alignItems: "center",
-    ...Platform.select({
-      android: {
-        flex: 1,
-        left: 0,
-        position: "absolute",
-        right: 0,
-        top: 0,
-        zIndex: 1,
-      },
-    }),
+    justifyContent: "center",
+    marginBottom: 10,
   },
   autocompleteText: {
-    fontSize: 26,
+    padding: 10,
+    fontSize: 16,
+    backgroundColor: "tomato",
+    color: "white",
   },
 });
+
+export default Home;
