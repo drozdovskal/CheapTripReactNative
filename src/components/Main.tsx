@@ -1,16 +1,15 @@
-import "react-native-gesture-handler";
 import React, { FC } from "react";
+import { View, StyleSheet } from "react-native";
+import { Text, useTheme } from "react-native-paper";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-
-import { useTheme } from "react-native-paper";
-
-const Stack = createStackNavigator();
 
 import { CustomNavigationBar } from "./AppBar";
 import { Home } from "../screens/Home";
 import { Contacts } from "../screens/Contacts";
 import CityExplorerScreen from "./CityExplorerScreen";
+
+const Stack = createStackNavigator();
 
 export const Main: FC = () => {
   const theme = useTheme();
@@ -27,10 +26,25 @@ export const Main: FC = () => {
           },
         }}
       >
-        <Stack.Screen name="Home" component={Home} />
-        <Stack.Screen name="Contacts" component={Contacts} />
-        <Stack.Screen name="CityExplorer" component={CityExplorerScreen} /> // Add the CityExplorerScreen component as a new screen
+        <Stack.Screen
+          name="Home"
+          component={Home}
+          options={{ title: "Home" }}
+        />
+        <Stack.Screen
+          name="Contacts"
+          component={Contacts}
+          options={{ title: "Contacts" }}
+        />
+        <Stack.Screen
+          name="CityExplorer"
+          component={CityExplorerScreen}
+          options={{ title: "City Explorer" }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
+
+export default Main;
+

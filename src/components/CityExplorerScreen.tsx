@@ -1,8 +1,7 @@
-import React from 'react'
+import React from 'react';
 import { View, Text } from 'react-native';
 
 const CityExplorerScreen: React.FC = () => {
-  // Dummy data
   const cityData = {
     cityName: 'Kyiv',
     population: 2800000,
