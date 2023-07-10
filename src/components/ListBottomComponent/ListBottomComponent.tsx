@@ -29,7 +29,7 @@ const ListBottomComponent: React.FC<Props> = ({ bottom }) => {
     >
       
       <View style = {styles.directions}>
-        <Text style = {styles.boldText}>Kiev -> Wroclaw</Text>
+        <Text style = {styles.boldText}>Kiev - Wroclaw</Text>
         <Text>Flight</Text>
       </View>
       <View style = {[styles.directions, {marginTop: 10}]}>

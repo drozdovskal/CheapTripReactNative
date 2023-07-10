@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FC, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet } from "react-native";
 import { Text, useTheme, Button } from "react-native-paper";
 import { FlatList } from "react-native-gesture-handler";
@@ -21,14 +21,14 @@ interface Direction {
   direct_routes: string[];
 }
 
-export const Home: FC = () => {
+const Home = () => {
   const [forCity, setForCity] = useState("");
   const [toCity, setToCity] = useState("");
   const [locations, setLocations] = useState<Location[]>([]);
   const [hideForCity, setHideForCity] = useState(false);
   const [hideToCity, setHideToCity] = useState(false);
+  const [searchResult, setSearchResult] = useState<any[]>([]);
   const [onSubmit, setOnSubmit] = useState(false);
-  const [directions, setDirections] = useState<Direction[]>([]);
   const theme = useTheme();
 
   const fetchLocations = async () => {
@@ -45,7 +45,7 @@ export const Home: FC = () => {
     fetchLocations();
   }, []);
 
-  const filteredLocations = (input: string) => {
+  const filteredLocations = useCallback((input: string) => {
     if (input) {
       const filtered = locations.filter((location) =>
         location.name.toLowerCase().startsWith(input.toLowerCase())
@@ -53,63 +53,65 @@ export const Home: FC = () => {
       return filtered;
     }
     return [];
-  };
+  }, [locations]);
 
   const dataForCity = filteredLocations(forCity);
   const dataToCity = filteredLocations(toCity);
 
-  const renderItem = useCallback(({ item }) => {
+  const renderItem = useCallback(({ item }: { item: any }) => {
     return <ListComponent toCity={toCity} forCity={forCity} item={item} />;
   }, []);
+  
+  
 
-  const sendPostRequest = async () => {
+  const search = async () => {
     try {
       const fromLocation = dataForCity.length > 0 ? dataForCity[0].country_id : null;
       const toLocation = dataToCity.length > 0 ? dataToCity[0].country_id : null;
+  
+    if (fromLocation && toLocation) {
+  const response = await fetch("https://cheaptrip.pythonanywhere.com/api/search/", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from_location: fromLocation,
+      to_location: toLocation,
+    }),
+  });
 
-      if (fromLocation && toLocation) {
-        const response = await fetch("https://cheaptrip.pythonanywhere.com/api/routes/", {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from_location: fromLocation,
-            to_location: toLocation,
-          }),
-        });
-        const data = await response.json();
-        // Process the response data from the server
-        console.log('Response received:', data);
+  const data = await response.json();
 
-        // Update the directions state with the received routes
-        setDirections(data.routes);
-        setOnSubmit(true);
-      }
+  console.log('Server response:', response); // Виведення вмісту відповіді сервера у консоль
+
+  setSearchResult(data.routes); // Змінено data.results на data.routes
+
+  setOnSubmit(true);
+}
+
     } catch (error) {
       console.error('An error occurred:', error);
     }
   };
+  
 
   const onSubmitAction = () => {
-    console.log("Pressed");
     setOnSubmit(true);
-    sendPostRequest(); // Call the function to execute the POST request
+    search();
   };
-  
 
   return (
     <View style={styles.container}>
       <View style={styles.titleContainer}>
         <Text
           style={{
-            ...styles.title,
             color: theme.colors.secondary,
             textAlign: "center",
           }}
           variant="titleMedium"
         >
-          Find the most beneficial and unusual routes between cities with airports, combiningflight, train, bus, ferry, and rideshare.
+          Find the most beneficial and unusual routes between cities with airports, combining flight, train, bus, ferry, and rideshare.
         </Text>
       </View>
       <View style={styles.inputContainer}>
@@ -192,13 +194,14 @@ export const Home: FC = () => {
           Let's go
         </Button>
       </View>
-      {onSubmit && (
-        <View style={styles.flatList}>
+      {searchResult.length > 0 && (
+        <View style={styles.searchResultContainer}>
+          <Text style={styles.searchResultTitle}>Search Result:</Text>
           <FlatList
-            data={directions}
+            data={searchResult}
             renderItem={({ item }) => (
               <View>
-                <Text>For city: {item.from_location}</Text>
+                <Text>From city: {item.from_location}</Text>
                 <Text>To city: {item.to_location}</Text>
                 <Text>Price: {item.price}</Text>
                 <Text>Duration: {item.duration} minutes</Text>
@@ -252,9 +255,13 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
   },
-  title: {
-    padding: 0,
-    margin: 0,
+  searchResultContainer: {
+    marginTop: 20,
+  },
+  searchResultTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
     textAlign: "center",
   },
 });

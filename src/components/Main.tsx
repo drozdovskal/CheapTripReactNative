@@ -4,8 +4,10 @@ import { Text, useTheme } from "react-native-paper";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 
+
+
+import Home from "../screens/Home";
 import { CustomNavigationBar } from "./AppBar";
-import { Home } from "../screens/Home";
 import { Contacts } from "../screens/Contacts";
 import CityExplorerScreen from "./CityExplorerScreen";
 
@@ -47,4 +49,5 @@ export const Main: FC = () => {
 };
 
 export default Main;
+
 
